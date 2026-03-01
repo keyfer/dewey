@@ -4,7 +4,7 @@ use std::path::PathBuf;
 
 #[derive(Parser)]
 #[command(name = "dewey")]
-#[command(about = "タスキ — All of your tasks in your Waybar")]
+#[command(about = "All of your tasks in your Waybar")]
 #[command(version = "0.0.1")]
 pub struct Cli {
     #[command(subcommand)]
