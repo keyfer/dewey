@@ -120,6 +120,8 @@ impl KeyBindings {
     pub fn handle_detail(key: KeyEvent) -> Option<Action> {
         match key.code {
             KeyCode::Esc | KeyCode::Char('q') => Some(Action::Cancel),
+            KeyCode::Char('j') | KeyCode::Down => Some(Action::MoveDown),
+            KeyCode::Char('k') | KeyCode::Up => Some(Action::MoveUp),
             KeyCode::Char('x') => Some(Action::ToggleTask),
             KeyCode::Char('o') => Some(Action::OpenInSource),
             KeyCode::Char('e') => Some(Action::EditTask),

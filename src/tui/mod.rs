@@ -328,10 +328,18 @@ async fn process_action(action: Action, app: &mut App) -> bool {
             return true;
         }
         Action::MoveUp => {
-            app.move_selection_up();
+            if app.mode == AppMode::DetailView {
+                app.detail_scroll = app.detail_scroll.saturating_sub(1);
+            } else {
+                app.move_selection_up();
+            }
         }
         Action::MoveDown => {
-            app.move_selection_down();
+            if app.mode == AppMode::DetailView {
+                app.detail_scroll = app.detail_scroll.saturating_add(1);
+            } else {
+                app.move_selection_down();
+            }
         }
         Action::MoveToNextGroup => {
             app.move_to_next_group();
@@ -369,6 +377,7 @@ async fn process_action(action: Action, app: &mut App) -> bool {
         }
         Action::ViewDetail => {
             if app.get_selected_visible_task().is_some() {
+                app.detail_scroll = 0;
                 app.mode = AppMode::DetailView;
             }
         }

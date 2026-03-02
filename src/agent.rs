@@ -66,7 +66,7 @@ pub fn launch_interactive(task: &Task, agent_cmd: &str) -> Result<()> {
     let prompt = build_agent_prompt(task);
 
     let status = std::process::Command::new(agent_cmd)
-        .arg("--prompt")
+        .arg("-p")
         .arg(&prompt)
         .status();
 

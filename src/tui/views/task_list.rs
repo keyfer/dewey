@@ -308,3 +308,38 @@ pub fn draw_help(f: &mut Frame, theme: &Theme, area: Rect) {
     f.render_widget(Clear, area);
     f.render_widget(help_paragraph, area);
 }
+
+pub fn draw_agent_menu(f: &mut Frame, theme: &Theme, area: Rect) {
+    let lines = vec![
+        Line::from(vec![Span::styled(
+            "Launch Agent",
+            theme.style_accent().add_modifier(Modifier::BOLD),
+        )]),
+        Line::from(""),
+        Line::from(vec![
+            Span::styled("i", theme.style_accent()),
+            Span::styled("   Interactive – opens agent in your terminal", theme.style_default()),
+        ]),
+        Line::from(vec![
+            Span::styled("b", theme.style_accent()),
+            Span::styled("   Background  – runs agent detached", theme.style_default()),
+        ]),
+        Line::from(""),
+        Line::from(vec![Span::styled(
+            "Esc to cancel",
+            theme.style_muted(),
+        )]),
+    ];
+
+    let paragraph = Paragraph::new(Text::from(lines)).block(
+        Block::default()
+            .title(" Agent ")
+            .borders(Borders::ALL)
+            .border_style(theme.style_accent())
+            .style(theme.style_base()),
+    );
+
+    let area = super::centered_rect(40, 30, area);
+    f.render_widget(Clear, area);
+    f.render_widget(paragraph, area);
+}

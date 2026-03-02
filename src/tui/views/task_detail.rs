@@ -159,11 +159,15 @@ pub fn draw_detail(f: &mut Frame, app: &App, theme: &Theme, area: Rect) {
         Span::styled(completed_str, theme.style_default()),
     ]));
 
-    let content = Paragraph::new(Text::from(lines)).wrap(Wrap { trim: false });
+    let content = Paragraph::new(Text::from(lines))
+        .wrap(Wrap { trim: false })
+        .scroll((app.detail_scroll, 0));
     f.render_widget(content, content_area);
 
     // Bottom hint line
     let hint = Paragraph::new(Line::from(vec![
+        Span::styled("j/k", theme.style_accent()),
+        Span::styled(" scroll  ", theme.style_muted()),
         Span::styled("Esc", theme.style_accent()),
         Span::styled(" close  ", theme.style_muted()),
         Span::styled("x", theme.style_accent()),

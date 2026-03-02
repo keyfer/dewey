@@ -98,6 +98,7 @@ pub struct App {
     pub should_quit: bool,
     pub setup_state: Option<SetupWizardState>,
     pub edit_form: Option<EditFormState>,
+    pub detail_scroll: u16,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -132,6 +133,7 @@ impl App {
             should_quit: false,
             setup_state: None,
             edit_form: None,
+            detail_scroll: 0,
         }
     }
 

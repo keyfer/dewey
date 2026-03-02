@@ -31,7 +31,7 @@ pub fn render(f: &mut Frame, app: &App, theme: &Theme) {
         }
         AppMode::AgentMenu => {
             task_list::draw_task_list(f, app, theme, area);
-            // Agent menu overlay will be implemented in a later task
+            task_list::draw_agent_menu(f, theme, area);
         }
         AppMode::DetailView => {
             task_list::draw_task_list(f, app, theme, area);
