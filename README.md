@@ -6,7 +6,7 @@ A TUI task manager that pulls tasks from multiple sources into one view. Single 
 - Quick-add with natural language — priorities, due dates, tags, backend routing
 - Scrollable task detail view with full metadata and descriptions
 - Live config reload — toggle backends, switch themes, no restart needed
-- Optional [Waybar](https://github.com/Alexays/Waybar/) integration (Linux) with smart badge and tooltip
+- Optional [Waybar](https://github.com/Alexays/Waybar/) (Linux) and [xbar](https://xbarapp.com/) (macOS) menu bar integration
 - Dark, light, and dynamic [Omarchy](https://github.com/basecamp/omarchy) theme support
 
 ---
@@ -154,6 +154,35 @@ Dewey can output [Waybar](https://github.com/Alexays/Waybar/)-compatible JSON fo
 ```
 
 CSS classes: `has-overdue`, `has-tasks`, `all-done`, `backend-error`
+
+## xbar (macOS)
+
+For macOS menu bar integration, use [xbar](https://xbarapp.com/) with the included plugin script.
+
+**Install xbar:**
+
+```bash
+brew install --cask xbar
+```
+
+**Add the plugin:**
+
+```bash
+mkdir -p ~/Library/Application\ Support/xbar/plugins
+curl -fsSL https://github.com/keyfer/dewey/raw/main/scripts/dewey.1m.sh \
+  -o ~/Library/Application\ Support/xbar/plugins/dewey.1m.sh
+chmod +x ~/Library/Application\ Support/xbar/plugins/dewey.1m.sh
+```
+
+**Launch xbar:**
+
+```bash
+open -a xbar
+```
+
+The plugin shows a task count badge in the menu bar with a dropdown listing tasks grouped by urgency. Click "Open Dewey TUI" to launch the full interface.
+
+To change the refresh interval, rename the plugin file (e.g., `dewey.30s.sh` for 30 seconds, `dewey.5m.sh` for 5 minutes).
 
 ## Configuration
 
