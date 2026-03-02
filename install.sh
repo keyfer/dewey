@@ -13,7 +13,8 @@ error() { printf "\033[0;31m%s\033[0m\n" "$1" >&2; exit 1; }
 OS=$(uname -s | tr '[:upper:]' '[:lower:]')
 case "$OS" in
     linux) OS="linux" ;;
-    *) error "Unsupported OS: $OS — dewey requires Linux (Waybar/Wayland)" ;;
+    darwin) OS="darwin" ;;
+    *) error "Unsupported OS: $OS. Try building from source: cargo install --path ." ;;
 esac
 
 # Detect architecture
@@ -70,28 +71,32 @@ if ! echo "$PATH" | tr ':' '\n' | grep -q "^${INSTALL_DIR}$"; then
     echo "  export PATH=\"${INSTALL_DIR}:\$PATH\""
 fi
 
-# Detect terminal for Waybar on-click
-if [ -n "${TERMINAL:-}" ]; then
-    TERM_CMD="$TERMINAL"
-elif command -v xdg-terminal-exec >/dev/null 2>&1; then
-    TERM_CMD="xdg-terminal-exec"
-else
-    TERM_CMD=""
+# Waybar setup hint (Linux only)
+if [ "$OS" = "linux" ]; then
+    if [ -n "${TERMINAL:-}" ]; then
+        TERM_CMD="$TERMINAL"
+    elif command -v xdg-terminal-exec >/dev/null 2>&1; then
+        TERM_CMD="xdg-terminal-exec"
+    else
+        TERM_CMD=""
+    fi
+
+    ON_CLICK="${TERM_CMD:-<your-terminal>} -e dewey tui"
+
+    echo ""
+    info "To add dewey to Waybar, add this to your Waybar config:"
+    echo ""
+    echo '  "custom/tasks": {'
+    echo '      "exec": "dewey",'
+    echo '      "return-type": "json",'
+    echo '      "format": "{}",'
+    echo "      \"on-click\": \"${ON_CLICK}\","
+    echo '      "interval": 30,'
+    echo '      "tooltip": true'
+    echo '  }'
+    echo ""
+    info "Then add \"custom/tasks\" to your bar modules list."
 fi
 
-ON_CLICK="${TERM_CMD:-<your-terminal>} -e dewey tui"
-
-# Waybar setup hint
 echo ""
-info "To add dewey to Waybar, add this to your Waybar config:"
-echo ""
-echo '  "custom/tasks": {'
-echo '      "exec": "dewey",'
-echo '      "return-type": "json",'
-echo '      "format": "{}",'
-echo "      \"on-click\": \"${ON_CLICK}\","
-echo '      "interval": 30,'
-echo '      "tooltip": true'
-echo '  }'
-echo ""
-info "Then add \"custom/tasks\" to your bar modules list."
+info "Run 'dewey tui' to get started."

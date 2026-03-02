@@ -1,12 +1,13 @@
 # Dewey
 
-A TUI task manager that lives in your [Waybar](https://github.com/Alexays/Waybar/). Pull tasks from multiple sources into one view. Single Rust binary. Compatible with [Omarchy](https://github.com/basecamp/omarchy).
+A TUI task manager that pulls tasks from multiple sources into one view. Single Rust binary. Works on Linux and macOS.
 
-- Aggregate tasks from local files, [Obsidian](https://publish.obsidian.md/tasks/Introduction) vaults, and [Linear](https://linear.app)
-- Smart Waybar badge and tooltip — task count at a glance, TUI a click away
+- Aggregate tasks from local files and [Linear](https://linear.app)
 - Quick-add with natural language — priorities, due dates, tags, backend routing
+- Scrollable task detail view with full metadata and descriptions
 - Live config reload — toggle backends, switch themes, no restart needed
-- Dark, light, and dynamic Omarchy theme support
+- Optional [Waybar](https://github.com/Alexays/Waybar/) integration (Linux) with smart badge and tooltip
+- Dark, light, and dynamic [Omarchy](https://github.com/basecamp/omarchy) theme support
 
 ---
 
@@ -16,7 +17,7 @@ A TUI task manager that lives in your [Waybar](https://github.com/Alexays/Waybar
 
 Navigate, quick-add, edit, and complete tasks without leaving the terminal. Tasks from all backends sorted by urgency.
 
-### Waybar
+### Waybar (Linux)
 
 <img src="assets/waybar.gif" width="600" alt="waybar tooltip">
 
@@ -38,11 +39,31 @@ Themes reload instantly when config changes.
 
 ## Install
 
+### Linux
+
+Pre-built binary:
+
 ```bash
 curl -fsSL https://github.com/keyfer/dewey/raw/main/install.sh | bash
 ```
 
-Or build from source:
+### macOS
+
+Build from source using [Rust](https://rustup.rs/):
+
+```bash
+# Install Rust if you don't have it
+curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+
+# Clone and install
+git clone https://github.com/keyfer/dewey.git
+cd dewey
+cargo install --path .
+```
+
+The binary is installed to `~/.cargo/bin/dewey`. Make sure `~/.cargo/bin` is in your `PATH` (the Rust installer usually sets this up).
+
+### From source (any platform)
 
 ```bash
 cargo install --path .
@@ -69,18 +90,6 @@ Reads and writes `~/.dewey/todo.txt` by default.
 [backends.local]
 enabled = true
 # path = "~/.dewey/todo.txt"
-```
-
-### Obsidian
-
-Scans your vault for markdown checkboxes. Supports [Obsidian Tasks](https://publish.obsidian.md/tasks/Introduction) emoji metadata. Changes in the vault auto-refresh the TUI. Press `o` to open a task in Obsidian or `$EDITOR`.
-
-```toml
-[backends.obsidian]
-enabled = true
-vault_path = "~/Documents/Obsidian"
-ignore_folders = [".obsidian", ".trash"]
-inbox_file = "Inbox.md"
 ```
 
 ### Linear
@@ -129,7 +138,9 @@ api_key = "lin_api_..."
 team_id = "..."
 ```
 
-## Waybar
+## Waybar (Linux)
+
+Dewey can output [Waybar](https://github.com/Alexays/Waybar/)-compatible JSON for use as a status bar module. When run outside a terminal (e.g. from Waybar), it outputs JSON by default.
 
 ```jsonc
 "custom/tasks": {
@@ -164,9 +175,11 @@ dewey agent status # Show running background agents
 
 ## TUI keybindings
 
+### Task list
+
 | Key | Action |
 |-----|--------|
-| `j` / `k` | Navigate |
+| `j` / `k` | Navigate up / down |
 | `Enter` | View task detail |
 | `a` | Quick-add task |
 | `e` | Edit task |
@@ -184,6 +197,16 @@ dewey agent status # Show running background agents
 | `S` | Agent status |
 | `?` | Help |
 | `q` | Quit |
+
+### Task detail (`Enter`)
+
+| Key | Action |
+|-----|--------|
+| `j` / `k` | Scroll down / up |
+| `e` | Edit task |
+| `x` | Toggle complete |
+| `o` | Open in source app |
+| `Esc` / `q` | Close detail |
 
 ## License
 
