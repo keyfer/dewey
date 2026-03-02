@@ -605,9 +605,8 @@ mod tests {
 default_view = "upcoming"
 theme = "dark"
 
-[backends.obsidian]
+[backends.local]
 enabled = true
-vault_path = "/home/user/vault"
 "#;
         let mut file = std::fs::File::create(&config_path).unwrap();
         file.write_all(initial.as_bytes()).unwrap();
@@ -645,7 +644,7 @@ vault_path = "/home/user/vault"
         );
         assert_eq!(table["general"]["theme"].as_str(), Some("dark"));
         assert_eq!(
-            table["backends"]["obsidian"]["enabled"].as_bool(),
+            table["backends"]["local"]["enabled"].as_bool(),
             Some(true)
         );
 

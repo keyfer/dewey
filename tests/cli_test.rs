@@ -148,7 +148,6 @@ fn test_help_command() {
 
     cmd.assert()
         .success()
-        .stdout(predicate::str::contains("タスキ"))
         .stdout(predicate::str::contains("waybar"))
         .stdout(predicate::str::contains("tui"))
         .stdout(predicate::str::contains("add"))

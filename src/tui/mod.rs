@@ -12,8 +12,6 @@ use std::io;
 use std::sync::mpsc::{channel, Receiver};
 use std::time::{Duration, Instant};
 
-use std::path::Path;
-
 use crate::backends::linear::setup::{SetupStep, SetupWizard};
 use crate::backends::BackendManager;
 use crate::tui::app::{App, AppMode, StatusLevel};
@@ -57,50 +55,6 @@ fn setup_theme_watcher(theme: &Theme) -> crate::error::Result<(RecommendedWatche
     }
     
     Ok((watcher, rx))
-}
-
-fn setup_vault_watcher(config: &crate::config::Config) -> Option<(RecommendedWatcher, Receiver<NotifyEvent>)> {
-    let vault_path = config
-        .backends
-        .obsidian
-        .as_ref()
-        .filter(|t| t.get("enabled").and_then(|v| v.as_bool()).unwrap_or(false))
-        .and_then(|t| t.get("vault_path").and_then(|v| v.as_str()))
-        .map(|s| shellexpand::tilde(s).into_owned())?;
-
-    let vault_path = Path::new(&vault_path).to_path_buf();
-    if !vault_path.exists() {
-        return None;
-    }
-
-    let (tx, rx) = channel::<NotifyEvent>();
-
-    let mut watcher = RecommendedWatcher::new(
-        move |res: Result<NotifyEvent, notify::Error>| {
-            if let Ok(event) = res {
-                let is_md_event = event.paths.iter().any(|p| {
-                    p.extension().and_then(|e| e.to_str()) == Some("md")
-                });
-
-                if is_md_event {
-                    match event.kind {
-                        EventKind::Modify(_) | EventKind::Create(_) | EventKind::Remove(_) => {
-                            let _ = tx.send(event);
-                        }
-                        _ => {}
-                    }
-                }
-            }
-        },
-        notify::Config::default(),
-    )
-    .ok()?;
-
-    watcher
-        .watch(&vault_path, RecursiveMode::Recursive)
-        .ok()?;
-
-    Some((watcher, rx))
 }
 
 fn setup_config_watcher() -> Option<(RecommendedWatcher, Receiver<NotifyEvent>)> {
@@ -154,11 +108,6 @@ pub async fn run(backend_manager: BackendManager, config: crate::config::Config)
         Err(_) => (None, None),
     };
 
-    let (_vault_watcher, vault_rx) = match setup_vault_watcher(&config) {
-        Some((watcher, rx)) => (Some(watcher), Some(rx)),
-        None => (None, None),
-    };
-
     let (_config_watcher, config_rx) = match setup_config_watcher() {
         Some((watcher, rx)) => (Some(watcher), Some(rx)),
         None => (None, None),
@@ -178,7 +127,6 @@ pub async fn run(backend_manager: BackendManager, config: crate::config::Config)
     let tick_rate = Duration::from_millis(250);
     let mut last_tick = Instant::now();
     let mut last_theme_change = Instant::now();
-    let mut last_vault_change = Instant::now();
     let mut last_config_change = Instant::now();
 
     loop {
@@ -297,15 +245,6 @@ pub async fn run(backend_manager: BackendManager, config: crate::config::Config)
             }
         }
 
-        if let Some(ref rx) = vault_rx {
-            while let Ok(_event) = rx.try_recv() {
-                if last_vault_change.elapsed() >= Duration::from_secs(1) {
-                    app.refresh_tasks().await;
-                    last_vault_change = Instant::now();
-                }
-            }
-        }
-
         if let Some(ref rx) = config_rx {
             while let Ok(_event) = rx.try_recv() {
                 if last_config_change.elapsed() >= Duration::from_secs(1) {
@@ -336,17 +275,6 @@ pub async fn run(backend_manager: BackendManager, config: crate::config::Config)
 
 fn get_open_command(app: &App) -> Option<Vec<String>> {
     let task = app.get_selected_visible_task()?;
-
-    if task.source == crate::model::BackendSource::Obsidian {
-        if let Some(ref table) = app.config.backends.obsidian {
-            if let Ok(obs_config) = crate::backends::obsidian::ObsidianConfig::from_table(table) {
-                let backend = crate::backends::obsidian::ObsidianBackend::new(obs_config);
-                if let Some(cmd) = backend.open_command(&task) {
-                    return Some(cmd);
-                }
-            }
-        }
-    }
 
     let source_path = task.source_path.as_ref()?;
 
@@ -511,8 +439,8 @@ async fn process_action(action: Action, app: &mut App) -> bool {
                 );
             }
         }
-        Action::LinearSetup => {
-            app.enter_linear_setup();
+        Action::Setup => {
+            app.enter_setup();
         }
         Action::EditFormUp => {
             if let Some(ref mut form) = app.edit_form {

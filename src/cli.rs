@@ -29,7 +29,7 @@ pub enum Command {
 
     /// Quick-add a task from the command line
     Add {
-        /// Task text (supports natural language: "Buy milk tomorrow #groceries @obsidian")
+        /// Task text (supports natural language: "Buy milk tomorrow #groceries @linear")
         text: Vec<String>,
     },
 

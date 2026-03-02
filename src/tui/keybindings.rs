@@ -29,7 +29,7 @@ pub enum Action {
     AgentInteractive,
     AgentBackground,
     AgentStatus,
-    LinearSetup,
+    Setup,
     // Edit form actions
     EditFormUp,
     EditFormDown,
@@ -93,8 +93,8 @@ impl KeyBindings {
             KeyCode::Char('A') => Some(Action::LaunchAgent),
             KeyCode::Char('S') => Some(Action::AgentStatus),
 
-            // Linear setup
-            KeyCode::Char('L') => Some(Action::LinearSetup),
+            // Setup wizard
+            KeyCode::Char('L') => Some(Action::Setup),
 
             _ => None,
         }

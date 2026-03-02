@@ -65,8 +65,6 @@ fn default_theme() -> String {
 #[derive(Debug, Deserialize, Serialize, Default)]
 pub struct BackendsConfig {
     #[serde(default)]
-    pub obsidian: Option<toml::Table>,
-    #[serde(default)]
     pub local: Option<toml::Table>,
     #[serde(default)]
     pub linear: Option<toml::Table>,
@@ -171,7 +169,6 @@ path = "/tmp/todo.txt"
         let toml_str = "";
         let config: Config = toml::from_str(toml_str).unwrap();
         assert!(config.backends.linear.is_none());
-        assert!(config.backends.obsidian.is_none());
         assert!(config.backends.local.is_none());
         assert!(config.agent.is_none());
         assert_eq!(config.general.default_view, "today");
@@ -187,10 +184,6 @@ theme = "dark"
 
 [waybar]
 tooltip_scope = "all"
-
-[backends.obsidian]
-enabled = true
-vault_path = "/home/user/vault"
 
 [backends.local]
 enabled = true
@@ -208,7 +201,6 @@ mode = "background"
         assert_eq!(config.general.default_view, "upcoming");
         assert_eq!(config.general.theme, "dark");
         assert_eq!(config.waybar.tooltip_scope, "all");
-        assert!(config.backends.obsidian.is_some());
         assert!(config.backends.local.is_some());
         assert!(config.backends.linear.is_some());
         let agent = config.agent.expect("agent should be Some");

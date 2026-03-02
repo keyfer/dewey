@@ -38,7 +38,6 @@ pub struct Task {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize)]
 pub enum BackendSource {
-    Obsidian,
     LocalFile,
     Linear,
 }
@@ -46,7 +45,6 @@ pub enum BackendSource {
 impl BackendSource {
     pub fn name(&self) -> &str {
         match self {
-            Self::Obsidian => "obsidian",
             Self::LocalFile => "local",
             Self::Linear => "linear",
         }
@@ -54,7 +52,6 @@ impl BackendSource {
 
     pub fn icon(&self) -> &str {
         match self {
-            Self::Obsidian => "◆",
             Self::LocalFile => "■",
             Self::Linear => "◇",
         }

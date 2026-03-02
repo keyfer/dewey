@@ -1,7 +1,7 @@
 [general]
 # default_view = "today"       # TUI default view: today, upcoming, all, done
 # theme = "omarchy"            # omarchy, dark, light, or custom theme name
-# default_backend = "local"    # default backend for quick-add: local, linear, obsidian
+# default_backend = "local"    # default backend for quick-add: local, linear
 
 [waybar]
 # tooltip_scope = "overdue_today"  # overdue_today, all, today_only
@@ -9,13 +9,6 @@
 [backends.local]
 enabled = true
 # path = "~/.dewey/todo.txt"  # default location
-
-# [backends.obsidian]
-# enabled = true
-# vault_path = "~/Documents/Obsidian"
-# inbox_file = "Inbox.md"              # where quick-add tasks go
-# folders = ["Projects", "Areas"]      # only scan these folders (omit to scan all)
-# ignore_folders = [".obsidian", ".trash", ".git"]
 
 # [backends.linear]
 # enabled = true

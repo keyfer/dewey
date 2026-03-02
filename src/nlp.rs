@@ -222,13 +222,13 @@ mod tests {
     #[test]
     fn test_parse_combined() {
         let (title, priority, due, tags, backend, _) =
-            parse_quick_add("Review PR #work (p1) tomorrow @obsidian", None, &[]).unwrap();
+            parse_quick_add("Review PR #work (p1) tomorrow @linear", None, &[]).unwrap();
 
         assert_eq!(title, "Review PR");
         assert_eq!(priority, Priority::High);
         assert!(due.is_some());
         assert_eq!(tags, vec!["work"]);
-        assert_eq!(backend, "obsidian");
+        assert_eq!(backend, "linear");
     }
 
     #[test]
@@ -305,8 +305,8 @@ mod tests {
 
     #[test]
     fn test_parse_backend_routing() {
-        let (_, _, _, _, backend, _) = parse_quick_add("Task @obsidian", None, &[]).unwrap();
-        assert_eq!(backend, "obsidian");
+        let (_, _, _, _, backend, _) = parse_quick_add("Task @linear", None, &[]).unwrap();
+        assert_eq!(backend, "linear");
     }
 
     #[test]

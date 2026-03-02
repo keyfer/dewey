@@ -50,9 +50,6 @@ crossterm = "0.28"
 # File watching for dynamic theme reloading
 notify = "7"
 
-# Directory traversal (for Obsidian vault scanning)
-walkdir = "2"
-
 # HTTP client (for Linear API)
 reqwest = { version = "0.12", features = ["json"] }
 

@@ -3,7 +3,6 @@ use async_trait::async_trait;
 use crate::error::Result;
 use crate::model::{BackendSource, NewTask, Task, TaskFilter, TaskId, TaskUpdate};
 
-pub mod obsidian;
 pub mod localfile;
 pub mod linear;
 
@@ -17,7 +16,6 @@ pub trait TaskBackend: Send + Sync {
     /// (e.g. named Linear backends use their config name).
     fn key(&self) -> &str {
         match self.source() {
-            BackendSource::Obsidian => "obsidian",
             BackendSource::LocalFile => "local",
             BackendSource::Linear => "linear",
         }
@@ -53,13 +51,6 @@ impl BackendManager {
             if table.get("enabled").and_then(|v| v.as_bool()).unwrap_or(false) {
                 let local_config = localfile::LocalFileConfig::from_table(table)?;
                 backends.push(Box::new(localfile::LocalFileBackend::new(local_config)));
-            }
-        }
-
-        if let Some(ref table) = config.backends.obsidian {
-            if table.get("enabled").and_then(|v| v.as_bool()).unwrap_or(false) {
-                let obs_config = obsidian::ObsidianConfig::from_table(table)?;
-                backends.push(Box::new(obsidian::ObsidianBackend::new(obs_config)));
             }
         }
 
