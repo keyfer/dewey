@@ -297,9 +297,24 @@ fn get_open_command(app: &App) -> Option<Vec<String>> {
 }
 
 fn get_config_command() -> Option<Vec<String>> {
-    let editor = std::env::var("EDITOR").ok()?;
     let config_path = crate::config::Config::default_config_path().ok()?;
-    Some(vec![editor, config_path.to_string_lossy().into_owned()])
+    let path_str = config_path.to_string_lossy().into_owned();
+
+    if let Ok(editor) = std::env::var("EDITOR") {
+        return Some(vec![editor, path_str]);
+    }
+
+    // macOS fallback: open in default text editor
+    #[cfg(target_os = "macos")]
+    {
+        return Some(vec!["open".into(), "-t".into(), path_str]);
+    }
+
+    // Linux fallback: try xdg-open
+    #[cfg(not(target_os = "macos"))]
+    {
+        return Some(vec!["xdg-open".into(), path_str]);
+    }
 }
 
 fn handle_key(key: KeyEvent, app: &App) -> Option<Action> {
@@ -672,7 +687,7 @@ async fn process_setup_action(action: SetupAction, app: &mut App, wizard: &Setup
 
             if chosen.contains(&"linear".to_string()) {
                 app.input_buffer.clear();
-                app.mode = AppMode::Setup(SetupStep::ApiKey);
+                app.mode = AppMode::Setup(SetupStep::BackendName);
             } else {
                 // Only local selected -- write config and complete
                 let config_path = crate::config::Config::default_config_path().unwrap();
