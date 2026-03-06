@@ -194,6 +194,7 @@ fn draw_setup(f: &mut Frame, app: &App, step: &SetupStep, theme: &Theme, area: R
         } => {
             draw_setup_select_statuses(f, theme, inner, states, selected, *cursor);
         }
+        SetupStep::AddAnother { cursor } => draw_setup_add_another(f, theme, inner, *cursor),
         SetupStep::Complete => draw_setup_complete(f, app, theme, inner),
         SetupStep::Error(msg) => draw_setup_error(f, theme, inner, msg),
     }
@@ -582,6 +583,59 @@ fn draw_setup_select_statuses(
             .style(theme.style_muted())
             .alignment(Alignment::Center);
     f.render_widget(hint, chunks[3]);
+}
+
+fn draw_setup_add_another(f: &mut Frame, theme: &Theme, area: Rect, cursor: usize) {
+    let options = ["Add another Linear account", "Finish setup"];
+
+    let chunks = Layout::default()
+        .direction(Direction::Vertical)
+        .constraints([
+            Constraint::Length(2), // title
+            Constraint::Length(1), // spacer
+            Constraint::Length(2), // description
+            Constraint::Length(1), // spacer
+            Constraint::Length(options.len() as u16 + 2), // list with border
+            Constraint::Length(1), // hint
+            Constraint::Min(0),   // filler
+        ])
+        .split(area);
+
+    let title = Paragraph::new("Linear account saved!")
+        .style(theme.style_success().add_modifier(Modifier::BOLD))
+        .alignment(Alignment::Center);
+    f.render_widget(title, chunks[0]);
+
+    let desc = Paragraph::new("Would you like to connect another Linear workspace?")
+        .style(theme.style_default())
+        .alignment(Alignment::Center);
+    f.render_widget(desc, chunks[2]);
+
+    let items: Vec<ListItem> = options
+        .iter()
+        .enumerate()
+        .map(|(i, label)| {
+            let prefix = if i == cursor { "> " } else { "  " };
+            let style = if i == cursor {
+                theme.style_selected().add_modifier(Modifier::BOLD)
+            } else {
+                theme.style_default()
+            };
+            ListItem::new(format!("{prefix}{label}")).style(style)
+        })
+        .collect();
+
+    let list = List::new(items).block(
+        Block::default()
+            .borders(Borders::ALL)
+            .border_style(theme.style_muted()),
+    );
+    f.render_widget(list, chunks[4]);
+
+    let hint = Paragraph::new("j/k to navigate | Enter to select")
+        .style(theme.style_muted())
+        .alignment(Alignment::Center);
+    f.render_widget(hint, chunks[5]);
 }
 
 fn draw_setup_complete(f: &mut Frame, app: &App, theme: &Theme, area: Rect) {

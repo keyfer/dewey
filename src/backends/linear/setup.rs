@@ -79,6 +79,9 @@ pub enum SetupStep {
         selected: Vec<bool>,
         cursor: usize,
     },
+    AddAnother {
+        cursor: usize,
+    },
     Complete,
     Error(String),
 }
@@ -900,6 +903,7 @@ user_id = "user-1"
             selected: vec![],
             cursor: 0,
         };
+        let _ = SetupStep::AddAnother { cursor: 0 };
         let _ = SetupStep::Complete;
         let _ = SetupStep::Error("test".into());
     }

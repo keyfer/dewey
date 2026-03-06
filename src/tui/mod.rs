@@ -1028,7 +1028,7 @@ async fn process_setup_action(action: SetupAction, app: &mut App, wizard: &Setup
 
             match write_result {
                 Ok(()) => {
-                    app.mode = AppMode::Setup(SetupStep::Complete);
+                    app.mode = AppMode::Setup(SetupStep::AddAnother { cursor: 0 });
                 }
                 Err(e) => {
                     app.mode = AppMode::Setup(SetupStep::Error(format!(
@@ -1063,6 +1063,38 @@ async fn process_setup_action(action: SetupAction, app: &mut App, wizard: &Setup
                     )));
                 }
             }
+        }
+
+        // -- AddAnother step --
+        (SetupStep::AddAnother { cursor }, SetupAction::MoveDown) => {
+            let new_cursor = (*cursor + 1).min(1);
+            app.mode = AppMode::Setup(SetupStep::AddAnother { cursor: new_cursor });
+        }
+        (SetupStep::AddAnother { cursor }, SetupAction::MoveUp) => {
+            let new_cursor = cursor.saturating_sub(1);
+            app.mode = AppMode::Setup(SetupStep::AddAnother { cursor: new_cursor });
+        }
+        (SetupStep::AddAnother { cursor }, SetupAction::Submit) => {
+            if *cursor == 0 {
+                // Add another Linear account — reset linear-specific state and go to BackendName
+                if let Some(ref mut state) = app.setup_state {
+                    state.backend_name = None;
+                    state.api_key = String::new();
+                    state.user = None;
+                    state.team = None;
+                    state.assignee = String::new();
+                    state.statuses = Vec::new();
+                }
+                app.input_buffer.clear();
+                app.mode = AppMode::Setup(SetupStep::BackendName);
+            } else {
+                // Finish setup
+                app.mode = AppMode::Setup(SetupStep::Complete);
+            }
+        }
+        (SetupStep::AddAnother { .. }, SetupAction::Cancel) => {
+            // Treat Esc as "finish"
+            app.mode = AppMode::Setup(SetupStep::Complete);
         }
 
         // -- Complete step --

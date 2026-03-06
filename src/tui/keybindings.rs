@@ -207,6 +207,13 @@ impl KeyBindings {
                 KeyCode::Char(' ') => Some(SetupAction::ToggleItem),
                 _ => None,
             },
+            SetupStep::AddAnother { .. } => match key.code {
+                KeyCode::Char('j') | KeyCode::Down => Some(SetupAction::MoveDown),
+                KeyCode::Char('k') | KeyCode::Up => Some(SetupAction::MoveUp),
+                KeyCode::Enter => Some(SetupAction::Submit),
+                KeyCode::Esc => Some(SetupAction::Cancel),
+                _ => None,
+            },
             SetupStep::Complete => match key.code {
                 _ => Some(SetupAction::AnyKey),
             },
