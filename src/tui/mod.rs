@@ -627,6 +627,14 @@ async fn process_edit_form_save(app: &mut App) {
                     update.project = Some(Some(field.value.clone()));
                 }
             }
+            "tags" => {
+                let tags: Vec<String> = field.value
+                    .split(',')
+                    .map(|s| s.trim().to_string())
+                    .filter(|s| !s.is_empty())
+                    .collect();
+                update.tags = Some(tags);
+            }
             _ => {}
         }
     }

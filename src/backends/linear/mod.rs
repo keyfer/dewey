@@ -587,6 +587,11 @@ impl TaskBackend for LinearBackend {
             }
         }
 
+        if let Some(ref tag_names) = update.tags {
+            let label_ids = self.resolve_label_ids(tag_names).await?;
+            input.insert("labelIds".into(), json!(label_ids));
+        }
+
         if input.is_empty() {
             warn!("update_task called with no fields to update for {id}");
         }

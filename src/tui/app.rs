@@ -566,6 +566,17 @@ impl App {
             });
         }
 
+        let tags_val = task.tags.join(", ");
+        let tags_len = tags_val.chars().count();
+        fields.push(EditField {
+            label: "Tags".to_string(),
+            key: "tags".to_string(),
+            value: tags_val,
+            kind: EditFieldKind::Text,
+            options: Vec::new(),
+            cursor_pos: tags_len,
+        });
+
         Some(EditFormState {
             task_id: task.id.clone(),
             fields,

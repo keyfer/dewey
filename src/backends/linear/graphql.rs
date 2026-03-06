@@ -96,7 +96,7 @@ pub fn create_issue_mutation(
             "priority": priority,
             "dueDate": due_date,
             "assigneeId": assignee_id,
-            "labelIds": if label_ids.is_empty() { Value::Null } else { json!(label_ids) },
+            "labelIds": json!(label_ids),
             "projectId": project_id,
         }
     })
