@@ -375,6 +375,15 @@ async fn process_action(action: Action, app: &mut App) -> bool {
                 app.mode = AppMode::Normal;
             }
         }
+        Action::ToggleShowDone => {
+            app.toggle_show_done();
+            let msg = if app.show_done {
+                "Showing completed tasks"
+            } else {
+                "Hiding completed tasks"
+            };
+            app.set_status(msg, crate::tui::app::StatusLevel::Info);
+        }
         Action::EditTask => {
             let project_names = if let Some(task) = app.get_selected_visible_task() {
                 if task.source == crate::model::BackendSource::Linear {

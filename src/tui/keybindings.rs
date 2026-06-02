@@ -12,6 +12,7 @@ pub enum Action {
     ToggleGroup,
     ToggleAllGroups,
     ToggleTask,
+    ToggleShowDone,
     ViewDetail,
     EditTask,
     OpenInSource,
@@ -75,6 +76,7 @@ impl KeyBindings {
 
             // Actions
             KeyCode::Char('x') => Some(Action::ToggleTask),
+            KeyCode::Char('h') => Some(Action::ToggleShowDone),
             KeyCode::Enter => Some(Action::ViewDetail),
             KeyCode::Char('e') => Some(Action::EditTask),
             KeyCode::Char('o') => Some(Action::OpenInSource),

@@ -78,9 +78,56 @@ pub enum InputMode {
 #[derive(Debug, Clone)]
 pub struct TaskGroup {
     pub label: String,
-    pub date: Option<chrono::NaiveDate>,
     pub tasks: Vec<Task>,
     pub collapsed: bool,
+}
+
+/// The grouping key for a task: Linear issues group by their workflow status,
+/// local tasks by their pending/done state.
+fn status_label(task: &Task) -> String {
+    match task.source {
+        BackendSource::Linear => task
+            .state_name
+            .clone()
+            .unwrap_or_else(|| "No status".to_string()),
+        BackendSource::LocalFile => match task.status {
+            TaskStatus::Pending => "To Do".to_string(),
+            TaskStatus::Done => "Done".to_string(),
+        },
+    }
+}
+
+/// Display order for status groups. Lower sorts first. Heuristic over common
+/// Linear workflow names so custom states still land somewhere sensible.
+fn status_rank(label: &str) -> u8 {
+    let l = label.to_lowercase();
+    if l.contains("progress") || l.contains("started") || l.contains("doing") {
+        0
+    } else if l.contains("review") {
+        1
+    } else if l.contains("todo") || l.contains("to do") {
+        2
+    } else if l.contains("backlog") {
+        3
+    } else if l.contains("triage") {
+        4
+    } else if l.contains("cancel") {
+        9
+    } else if l.contains("done") || l.contains("complete") {
+        8
+    } else {
+        5
+    }
+}
+
+/// Sort key so tasks within a status group read overdue → today → future → undated.
+fn due_sort_key(task: &Task, today: chrono::NaiveDate) -> (u8, chrono::NaiveDate) {
+    match task.due {
+        Some(d) if d < today => (0, d),
+        Some(d) if d == today => (1, d),
+        Some(d) => (2, d),
+        None => (3, chrono::NaiveDate::MAX),
+    }
 }
 
 pub struct App {
@@ -99,6 +146,8 @@ pub struct App {
     pub setup_state: Option<SetupWizardState>,
     pub edit_form: Option<EditFormState>,
     pub detail_scroll: u16,
+    /// When false (default), completed tasks are hidden from the list.
+    pub show_done: bool,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -134,6 +183,7 @@ impl App {
             setup_state: None,
             edit_form: None,
             detail_scroll: 0,
+            show_done: false,
         }
     }
 
@@ -190,45 +240,47 @@ impl App {
         self.mode = AppMode::Setup(SetupStep::BackendName);
     }
 
+    /// Group tasks by status (Linear workflow state, or pending/done for local
+    /// tasks), ordered by `status_rank`, with tasks sorted by due date within
+    /// each group. Completed tasks are omitted unless `show_done` is set.
     pub fn group_tasks(&mut self) {
         use chrono::Local;
 
         let today = Local::now().date_naive();
-        let mut groups: Vec<TaskGroup> = Vec::new();
-        let mut group_map: HashMap<Option<chrono::NaiveDate>, Vec<Task>> = HashMap::new();
+        let mut group_map: HashMap<String, Vec<Task>> = HashMap::new();
 
         for task in &self.tasks {
-            group_map.entry(task.due).or_default().push(task.clone());
+            if !self.show_done && task.status == TaskStatus::Done {
+                continue;
+            }
+            group_map
+                .entry(status_label(task))
+                .or_default()
+                .push(task.clone());
         }
 
-        let mut dates: Vec<_> = group_map.keys().copied().collect();
-        dates.sort_by(|a, b| match (a, b) {
-            (Some(da), Some(db)) => da.cmp(db),
-            (Some(_), None) => std::cmp::Ordering::Less,
-            (None, Some(_)) => std::cmp::Ordering::Greater,
-            (None, None) => std::cmp::Ordering::Equal,
-        });
+        let mut labels: Vec<String> = group_map.keys().cloned().collect();
+        labels.sort_by(|a, b| status_rank(a).cmp(&status_rank(b)).then_with(|| a.cmp(b)));
 
-        for date in dates {
-            let tasks = group_map.remove(&date).unwrap();
-            let label = match date {
-                Some(d) if d < today => format!("Overdue - {}", d),
-                Some(d) if d == today => "Today".to_string(),
-                Some(d) if d == today + chrono::Duration::days(1) => "Tomorrow".to_string(),
-                Some(d) => format!("{}", d.format("%A %Y-%m-%d")),
-                None => "No due date".to_string(),
-            };
+        let mut groups: Vec<TaskGroup> = Vec::new();
+        for label in labels {
+            let mut tasks = group_map.remove(&label).unwrap();
+            tasks.sort_by(|a, b| {
+                due_sort_key(a, today)
+                    .cmp(&due_sort_key(b, today))
+                    .then_with(|| b.priority.cmp(&a.priority))
+                    .then_with(|| a.title.cmp(&b.title))
+            });
 
             let collapsed = self
                 .task_groups
                 .iter()
-                .find(|g| g.date == date)
+                .find(|g| g.label == label)
                 .map(|g| g.collapsed)
                 .unwrap_or(false);
 
             groups.push(TaskGroup {
                 label,
-                date,
                 tasks,
                 collapsed,
             });
@@ -238,6 +290,18 @@ impl App {
 
         if !self.task_groups.is_empty() && self.selected_group >= self.task_groups.len() {
             self.selected_group = self.task_groups.len() - 1;
+        }
+    }
+
+    /// Toggle visibility of completed tasks and regroup in place (no refetch —
+    /// done tasks are already loaded; Linear only returns them if its
+    /// `filter_status` includes a completed state).
+    pub fn toggle_show_done(&mut self) {
+        self.show_done = !self.show_done;
+        self.group_tasks();
+        let visible = self.visible_count();
+        if visible > 0 && self.selected_task >= visible {
+            self.selected_task = visible - 1;
         }
     }
 
@@ -708,6 +772,106 @@ mod tests {
         let config: Config = toml::from_str(toml_str).unwrap();
         let manager = BackendManager::from_config(&config).unwrap();
         App::new(manager, config)
+    }
+
+    fn make_task(
+        id: &str,
+        source: BackendSource,
+        status: TaskStatus,
+        state_name: Option<&str>,
+        due: Option<chrono::NaiveDate>,
+    ) -> Task {
+        Task {
+            id: id.to_string(),
+            title: id.to_string(),
+            status,
+            priority: crate::model::Priority::None,
+            due,
+            tags: Vec::new(),
+            source,
+            backend_key: source.name().to_string(),
+            source_line: None,
+            source_path: None,
+            created_at: None,
+            completed_at: None,
+            description: None,
+            project: None,
+            state_name: state_name.map(|s| s.to_string()),
+        }
+    }
+
+    #[test]
+    fn groups_linear_tasks_by_status_ordered_by_rank() {
+        let mut app = make_app_with_config("");
+        app.tasks = vec![
+            make_task("a", BackendSource::Linear, TaskStatus::Pending, Some("Todo"), None),
+            make_task(
+                "b",
+                BackendSource::Linear,
+                TaskStatus::Pending,
+                Some("In Progress"),
+                None,
+            ),
+        ];
+        app.group_tasks();
+
+        // "In Progress" (rank 0) sorts before "Todo" (rank 2).
+        let labels: Vec<&str> = app.task_groups.iter().map(|g| g.label.as_str()).collect();
+        assert_eq!(labels, vec!["In Progress", "Todo"]);
+    }
+
+    #[test]
+    fn local_tasks_group_by_pending_done_label() {
+        let mut app = make_app_with_config("");
+        app.show_done = true;
+        app.tasks = vec![
+            make_task("a", BackendSource::LocalFile, TaskStatus::Pending, None, None),
+            make_task("b", BackendSource::LocalFile, TaskStatus::Done, None, None),
+        ];
+        app.group_tasks();
+
+        let labels: Vec<&str> = app.task_groups.iter().map(|g| g.label.as_str()).collect();
+        assert_eq!(labels, vec!["To Do", "Done"]);
+    }
+
+    #[test]
+    fn done_tasks_hidden_by_default_and_shown_after_toggle() {
+        let mut app = make_app_with_config("");
+        app.tasks = vec![
+            make_task("a", BackendSource::LocalFile, TaskStatus::Pending, None, None),
+            make_task("b", BackendSource::LocalFile, TaskStatus::Done, None, None),
+        ];
+
+        // Default: completed task is hidden entirely (no "Done" group).
+        app.group_tasks();
+        assert_eq!(app.task_groups.len(), 1);
+        assert_eq!(app.task_groups[0].label, "To Do");
+
+        // After toggle: the "Done" group appears.
+        app.toggle_show_done();
+        let labels: Vec<&str> = app.task_groups.iter().map(|g| g.label.as_str()).collect();
+        assert!(labels.contains(&"Done"));
+    }
+
+    #[test]
+    fn tasks_within_group_sorted_overdue_first() {
+        use chrono::NaiveDate;
+        let mut app = make_app_with_config("");
+        let overdue = NaiveDate::from_ymd_opt(2020, 1, 1).unwrap();
+        let future = NaiveDate::from_ymd_opt(2100, 1, 1).unwrap();
+        app.tasks = vec![
+            make_task("future", BackendSource::Linear, TaskStatus::Pending, Some("Todo"), Some(future)),
+            make_task("none", BackendSource::Linear, TaskStatus::Pending, Some("Todo"), None),
+            make_task("overdue", BackendSource::Linear, TaskStatus::Pending, Some("Todo"), Some(overdue)),
+        ];
+        app.group_tasks();
+
+        let order: Vec<&str> = app.task_groups[0]
+            .tasks
+            .iter()
+            .map(|t| t.title.as_str())
+            .collect();
+        assert_eq!(order, vec!["overdue", "future", "none"]);
     }
 
     #[test]

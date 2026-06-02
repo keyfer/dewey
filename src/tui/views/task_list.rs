@@ -78,6 +78,8 @@ pub fn draw_task_list(f: &mut Frame, app: &App, theme: &Theme, area: Rect) {
         Span::styled(" view  ", theme.style_muted()),
         Span::styled("x", theme.style_accent()),
         Span::styled(" toggle  ", theme.style_muted()),
+        Span::styled("h", theme.style_accent()),
+        Span::styled(" done  ", theme.style_muted()),
         Span::styled("a", theme.style_accent()),
         Span::styled(" add  ", theme.style_muted()),
         Span::styled("/", theme.style_accent()),
@@ -161,6 +163,18 @@ fn format_task_line<'a>(task: &'a Task, theme: &'a Theme, width: u16) -> Line<'a
         .map(|p| format!("[{}]", p))
         .unwrap_or_default();
 
+    // Due date, surfaced inline now that groups are status-based rather than date-based.
+    let today = chrono::Local::now().date_naive();
+    let (due_str, due_style) = match task.due {
+        Some(d) if d < today => (format!("⚠ {}", d.format("%b %d")), theme.style_error()),
+        Some(d) if d == today => ("today".to_string(), theme.style_warning()),
+        Some(d) if d == today + chrono::Duration::days(1) => {
+            ("tomorrow".to_string(), theme.style_accent())
+        }
+        Some(d) => (d.format("%b %d").to_string(), theme.style_muted()),
+        None => (String::new(), theme.style_muted()),
+    };
+
     let mut tag_str = String::new();
     for tag in &task.tags {
         tag_str.push_str(&format!("#{} ", tag));
@@ -168,11 +182,17 @@ fn format_task_line<'a>(task: &'a Task, theme: &'a Theme, width: u16) -> Line<'a
 
     let left_len =
         2 + icon.len() + 1 + priority_marker.len() + task.title.len() + 1 + tag_str.len();
-    let right_len = if project_label.is_empty() {
-        source_label.len()
+    let due_len = if due_str.is_empty() {
+        0
     } else {
-        project_label.len() + 1 + source_label.len()
+        due_str.chars().count() + 1
     };
+    let right_len = due_len
+        + if project_label.is_empty() {
+            source_label.len()
+        } else {
+            project_label.len() + 1 + source_label.len()
+        };
     let available = width.saturating_sub(2) as usize;
 
     let padding = if left_len + right_len < available {
@@ -194,6 +214,9 @@ fn format_task_line<'a>(task: &'a Task, theme: &'a Theme, width: u16) -> Line<'a
     }
 
     spans.push(Span::raw(" ".repeat(padding)));
+    if !due_str.is_empty() {
+        spans.push(Span::styled(format!("{} ", due_str), due_style));
+    }
     if !project_label.is_empty() {
         spans.push(Span::styled(format!("{} ", project_label), theme.style_accent()));
     }
@@ -236,6 +259,10 @@ pub fn draw_help(f: &mut Frame, theme: &Theme, area: Rect) {
         Line::from(vec![
             Span::styled("x", theme.style_accent()),
             Span::styled("         Toggle task complete/pending", theme.style_default()),
+        ]),
+        Line::from(vec![
+            Span::styled("h", theme.style_accent()),
+            Span::styled("         Show/hide completed tasks", theme.style_default()),
         ]),
         Line::from(vec![
             Span::styled("Enter", theme.style_accent()),
